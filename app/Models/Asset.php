@@ -28,14 +28,14 @@ class Asset extends Model
 
  }
 
- public function priceHistories()
+       public function priceHistories()
  {
- return $this->hasMany(PriceHistory::class);
+      return $this->hasMany(PriceHistory::class);
  }
- 
- public function alerts()
+
+      public function alerts()
  {
- return $this->hasMany(PriceAlert::class);
+      return $this->hasMany(PriceAlert::class);
  }
 
 

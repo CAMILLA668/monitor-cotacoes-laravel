@@ -24,9 +24,9 @@ class PriceHistory extends Model
  ];
 
  }
- 
- public function asset()
+
+       public function asset()
  {
- return $this->belongsTo(Asset::class);
+       return $this->belongsTo(Asset::class);
  }
 }

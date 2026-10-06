@@ -26,9 +26,9 @@ class User extends Authenticatable
  ];
 
  }
- 
- public function alerts()
+
+     public function alerts()
  {
- return $this->hasMany(PriceAlert::class);
+      return $this->hasMany(PriceAlert::class);
  }
 }
