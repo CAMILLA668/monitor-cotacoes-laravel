@@ -1,89 +1,159 @@
 <?php
+
 namespace App\Services;
+
 use App\Models\Asset;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
-class QuoteService 
+class QuoteService
 {
-    public function updateQuotes(): int
+    public function update(): int
     {
-        $url = config('services.quotes.url');
+        $url = config('services.quotes_api.url');
 
-        $response = Http::timeout(15)
-            ->retry(3, 500)
-            ->get($url);
-
-         if (!$response->successful()) {
-            Log::warning('A API de cotações retornou erro.', [
-                'status' => $response->status(),
-            ]);
-
-            throw new RuntimeExpection (
-                'Não foi possível consultar a API de cotações.'
-            );
-         } 
-         
-         $data = $response->json();
-
-         if (!is_array($data)) {
+        if (empty($url)) {
             throw new RuntimeException(
-                'A API retornou dados em formato inválido.'
+                'URL da API de cotações não configurada.'
             );
-         }
+        }
 
-         $updated = 0;
+        try {
+            $response = Http::withOptions([
+                'verify' => base_path('cacert.pem'),
+            ])
+                ->timeout(10)
+                ->connectTimeout(5)
+                ->retry(3, 500)
+                ->acceptJson()
+                ->get($url);
 
-         foreach ($data as $quote) {
-             if(!isset(
-                $quote['code'],
-                $quote['bin'],
-                $quote['high'],
-                $quote['low'],
-                $quote['pctChange']
-             )) {
+            if ($response->failed()) {
                 Log::warning(
-                    'Registro de cotação ignorado por dados incompletos.'
-                );
-
-                continue;
-             }
-
-             $asset = Asset::where(
-                  'code',
-                  $quote['code']
-             )->first();
-
-             if(!$asset) {
-                Log::warning(
-                    'Ativo recebido pela API não está cadastrado.',
+                    'Falha HTTP na API de cotações.',
                     [
-                        'code' => $quote['code'],
+                        'status'    => $response->status(),
+                        'url'       => $url,
                     ]
                 );
 
-                continue;
-             }
+                throw new RuntimeException(
+                    'API retornou HTTP ' . $response->status()
+                );
+            }
 
-             $asset->update([
-                'current_price' => $quote['bid'],
-                'high_price'    => $quote['high'],
-                'low_price'     => $quote['low'],
-                'variation_24'  => $quote['pctChange'],
-             ]);
+            $data = $response->json();
 
-             $asset->priceHistories()->create([
-                'price' => $quote['bid'],
-                'high_price' => $quote['high'],
-                'low_price' => $quote['low'],
-                'feched_at' => now(),
-             ]);
+            if (!is_array($data) || empty($data)) {
+                throw new RuntimeException(
+                    'Resposta inválida da API de cotações.'
+                );
+            }
 
-             $updated++;
-         }
+            $updated = 0;
+            $fetchedAt = now();
 
-         return $updated;
+            foreach ($data as $quote) {
+                if (!is_array($quote)) {
+                    Log::warning(
+                        'Cotação ignorada: formato inválido.'
+                    );
+
+                    continue;
+                }
+
+                $code = strtoupper(
+                    trim((string) ($quote['code'] ?? ''))
+                );
+
+                if (empty($code)) {
+                    Log::warning(
+                        'Cotação ignorada: código do ativo ausente.'
+                    );
+
+                    continue;
+                }
+
+                $asset = Asset::where('code', $code)->first();
+
+                if (!$asset) {
+                    Log::warning(
+                        'Ativo não cadastrado.',
+                        ['code' => $code]
+                    );
+
+                    continue;
+                }
+
+                $requiredFields = [
+                    'bid',
+                    'high',
+                    'low',
+                    'pctChange',
+                ];
+
+                foreach ($requiredFields as $field) {
+                    if (
+                        !array_key_exists($field, $quote) ||
+                        !is_numeric($quote[$field])
+                    ) {
+                        Log::warning(
+                            'Campo de cotação ausente ou inválido.',
+                            [
+                                'code' => $code,
+                                'field' => $field,
+                            ]
+                        );
+
+                        continue 2;
+                    }
+                }
+
+                $currentPrice   = (float) $quote['bid'];
+                $highPrice      = (float) $quote['high'];
+                $lowPrice       = (float) $quote['low'];
+                $variation24h   = (float) $quote['pctChange'];
+
+
+                DB::transaction(function () use (
+                    $asset,
+                    $currentPrice,
+                    $highPrice,
+                    $lowPrice,
+                    $variation24h,
+                    $fetchedAt
+                ) {
+                    $asset->update([
+                        'current_price'     => $currentPrice,
+                        'high_price'        => $highPrice,
+                        'low_price'         => $lowPrice,
+                        'variation_24h'     => $variation24h,
+                    ]);
+
+                    $asset->priceHistories()->create([
+                        'price'         => $currentPrice,
+                        'high_price'    => $highPrice,
+                        'low_price'     => $lowPrice,
+                        'fetched_at'    => $fetchedAt,
+                    ]);
+                });
+
+                $updated++;
+            }
+
+            return $updated;
+        } catch (\Throwable $e) {
+            Log::error(
+                'Erro na atualização de cotações.',
+                [
+                    'message'   => $e->getMessage(),
+                    'exception' => get_class($e),
+                ]
+            );
+
+            throw $e;
+        }
     }
-
 }

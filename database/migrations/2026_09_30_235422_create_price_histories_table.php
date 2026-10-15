@@ -12,18 +12,23 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('price_histories', function (Blueprint $table) {
-        $table->id();
-    
-        $table->foreignId('asset_id')
-              ->constrained('assets')
-              ->cascadeOnDelete();
-        $table->decimal('price', 12, 4);
-        $table->decimal('high_price', 12, 4);
-        $table->decimal('low_price', 12, 4);
-        $table->timestamp('fetched_at');
-        $table->timestamps();
-        $table->index(['asset_id', 'fetched_at']);
+            $table->id();
 
+            $table->foreignId('asset_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->decimal('price', 12 ,4);
+
+            $table->decimal('high_price', 12, 4);
+
+            $table->decimal('low_price', 12, 4);
+
+            $table->timestamp('fetched_at');
+
+            $table->timestamps();
+
+            $table->index(['asset_id', 'fetched_at']);
         });
     }
 

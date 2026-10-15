@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Asset;
 use Illuminate\Database\Seeder;
 
 class AssetSeeder extends Seeder
@@ -13,42 +13,45 @@ class AssetSeeder extends Seeder
     public function run(): void
     {
         $assets = [
-         [
-          'code' => 'USD',
-          'name' => 'Dólar Americano',
-          'type' => 'fiat',
-          'symbol' => '$',
- ],
- [
-         'code' => 'EUR',
-         'name' => 'Euro',
-         'type' => 'fiat',
-         'symbol' => '€',
- ],
- [
-         'code' => 'GBP',
-         'name' => 'Libra Esterlina',
-         'type' => 'fiat',
-         'symbol' => '£',
- ],
- [
-         'code' => 'BTC',
-         'name' => 'Bitcoin',
-         'type' => 'crypto',
-         'symbol' => '₿',
- ],
- [
-         'code' => 'ETH',
-         'name' => 'Ethereum',
-         'type' => 'crypto',
-         'symbol' => 'Ξ',
- ],
- ];
-      foreach ($assets as $asset) {
-         Asset::updateOrCreate(
-         ['code' => $asset['code']],
-         $asset
-       );
-     }
-   }
+            [
+                'code' => 'USD',
+                'name' => 'Dólar Americano',
+                'type' => 'fiat',
+                'symbol' => '$'
+            ],
+            [
+                'code' => 'EUR',
+                'name' => 'Euro',
+                'type' => 'fiat',
+                'symbol' => '€',
+            ],
+            [
+                'code' => 'GBP',
+                'name' => 'Libra Esterlina',
+                'type' => 'fiat',
+                'symbol' => '£',
+            ],
+            [
+                'code' => 'BTC',
+                'name' => 'Bitcoin',
+                'type' => 'crypto',
+                'symbol' => '₿',
+            ],
+
+            [
+                'code' => 'ETH',
+                'name' => 'Ethereum',
+                'type' => 'crypto',
+                'symbol' => 'Ξ',
+            ],
+
+        ];
+
+        foreach ($assets as $asset) {
+            Asset::updateOrCreate(
+                ['code' => $asset['code']],
+                $asset
+            );
+        }
+    }
 }

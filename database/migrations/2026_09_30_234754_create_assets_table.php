@@ -13,10 +13,9 @@ return new class extends Migration
     {
         Schema::create('assets', function (Blueprint $table) {
             $table->id();
-            
             $table->string('code', 10)->unique();
             $table->string('name');
-            $table->string('type', 10);
+            $table->enum('type', ['fiat', 'crypto']);
             $table->string('symbol', 10);
             $table->decimal('current_price', 12, 4)->default(0);
             $table->decimal('high_price', 12, 4)->default(0);
@@ -25,8 +24,7 @@ return new class extends Migration
             $table->timestamps();
             $table->index('type');
         });
- }
-    
+    }
 
     /**
      * Reverse the migrations.

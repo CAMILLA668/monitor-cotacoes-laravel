@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AlertRequest extends FormRequest
 {
@@ -23,22 +24,25 @@ class AlertRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'asset_id' => [
-              'required',
-              'integer',
-              'exists:assets,id',
-    ],
-            'target_price' => [
-               'required',
-               'numeric',
-               'gt:0',
-   ],
-             'condition' => [
+           'asset_id' => [
                 'required',
-              Rule::in([
-                  'above',
-                   'below',
-               ]),
+                'integer',
+                'exists:assets,id',
+            ],
+
+            'target_price' => [
+                'required',
+                'numeric',
+                'gt:0',
+                'decimal:0,4',
+            ],
+
+            'condition' => [
+                'required',
+                Rule::in([
+                    'above',
+                    'below',
+                ]),
             ],
         ];
     }

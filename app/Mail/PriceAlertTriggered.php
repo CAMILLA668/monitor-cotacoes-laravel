@@ -2,10 +2,10 @@
 
 namespace App\Mail;
 
+use App\Models\PriceAlert;
+use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -18,9 +18,10 @@ class PriceAlertTriggered extends Mailable
      * Create a new message instance.
      */
     public function __construct(
-        public PriceAlert $alert
-    ){
-        //
+        public PriceAlert $alert,
+        public CarbonInterface $triggeredAt
+    ) {
+
     }
 
     /**
@@ -29,8 +30,7 @@ class PriceAlertTriggered extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Alerta de cotação atingido - ' .
-                $this->alert->asset->name,
+            subject: 'Alerta de preço atingido - ' . $this->alert->asset->code
         );
     }
 
@@ -40,7 +40,12 @@ class PriceAlertTriggered extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.price-alert-triggered',
+            markdown: 'mail.price-alert-triggered',
+            with: [
+                'alert'         => $this->alert,
+                'asset'         => $this->alert->asset,
+                'triggeredAt'   => $this->triggeredAt,
+            ]
         );
     }
 

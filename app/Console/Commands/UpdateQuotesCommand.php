@@ -1,64 +1,57 @@
-<?php 
+<?php
 
 namespace App\Console\Commands;
 
 use App\Services\AlertService;
 use App\Services\QuoteService;
 use Illuminate\Console\Command;
-use Throwable;
 
 class UpdateQuotesCommand extends Command
 {
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
     protected $signature = 'quotes:update';
 
-    protected $description = 
-       'Atualiza as cotações, grava o histórico e verifica os alertas';
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Atualiza cotações, histórico e verifica alertas';
 
-    public function __construct(
-        private QuoteService $quoteService,
-        private AlertService $alertService,
-    ) {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    /**
+     * Execute the console command.
+     */
+    public function handle(
+        QuoteService $quotes,
+        AlertService $alerts
+    ): int
     {
-        $this->info(
-            'Iniciando atualização das cotações...'
-        );
+        $this->info('Atualizando cotações...');
 
-        try{
-            $updatedAssets = 
-               $this->quoteService->updateQuotes();
+        try {
+            $updated = $quotes->update();
 
-           $this->info(
-              "{$updatedAssets} ativo(s) atualizado(s)."
-           );
-
-           $triggeredAlerts = 
-               $this->alertService->checkAlerts();
+            $triggered = $alerts->processPendingAlerts();
 
             $this->info(
-                "{$triggeredAlerts} alerta(s) disparado(s)."
+                "Ativos Atualizados: {$updated}"
             );
 
             $this->info(
-                'Processo concluído com sucesso.'
+                "Alertas disparados: {$triggered}"
             );
 
             return self::SUCCESS;
-        } catch (Throwable $exception) {
-
+        } catch (\Throwable $e) {
             $this->error(
-                'Não foi possível concluir a atualização.'
-            );
-
-            $this->error(
-                $exception->getMessage()
+                $e->getMessage()
             );
 
             return self::FAILURE;
         }
     }
 }
-?>
